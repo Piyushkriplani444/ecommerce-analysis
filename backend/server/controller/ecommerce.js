@@ -2,6 +2,7 @@ const { default: axios } = require("axios");
 const Sequelize = require("sequelize");
 
 const { Ecommerce } = require("../models/index");
+const db = require("../models/index");
 
 const { Op } = Sequelize;
 async function getData(req, res) {
@@ -108,7 +109,42 @@ async function getFilterData(req, res) {
   }
 }
 
+async function getStatictics(req, res) {
+  try {
+    let { month } = req.body;
+    if (!month || month.length == 0) {
+      month = 3;
+    }
+    const datas = await db.sequelize.query(
+      `SELECT * FROM public.ecommerce where extract(month from "dateOfSale") = ${parseInt(
+        month
+      )}  `
+    );
+    let total_no_sold = 0;
+    let total_no_unsold = 0;
+    let total_sold = 0;
+    for (let x of datas[0]) {
+      if (x.sold) {
+        total_no_sold = total_no_sold + 1;
+        total_sold = total_sold + x.price;
+      } else {
+        total_no_unsold += 1;
+      }
+    }
+
+    return res.send({
+      total_sold,
+      total_no_sold,
+      total_no_unsold,
+    });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
 module.exports = {
   getData,
   getFilterData,
+  getStatictics,
 };
