@@ -3,6 +3,7 @@ const Sequelize = require("sequelize");
 
 const { Ecommerce } = require("../models/index");
 const db = require("../models/index");
+const { QueryTypes } = require("sequelize");
 
 const { Op } = Sequelize;
 async function getData(req, res) {
@@ -143,8 +144,66 @@ async function getStatictics(req, res) {
   }
 }
 
+async function getBarChart(req, res) {
+  try {
+    const priceRanges = [
+      { min: 0, max: 100 },
+      { min: 101, max: 200 },
+      { min: 201, max: 300 },
+      { min: 301, max: 400 },
+      { min: 401, max: 500 },
+      { min: 501, max: 600 },
+      { min: 601, max: 700 },
+      { min: 701, max: 800 },
+      { min: 801, max: 900 },
+      // { min: 901, max: Infinity },
+    ];
+
+    let { month } = req.body;
+    if (!month || month.length == 0) {
+      month = 3;
+    }
+    const ranges = await Promise.all(
+      priceRanges.map(async (range) => {
+        const query = `SELECT COUNT(*) as itemCount FROM public.ecommerce where price between ? and ? and extract(month from "dateOfSale") = ?`;
+
+        const replacement1 = {
+          replacements: [
+            range.min,
+            range.max === Infinity ? "Infinity" : range.max,
+            month,
+          ],
+          type: QueryTypes.SELECT,
+        };
+
+        const rows = await db.sequelize.query(query, replacement1);
+        console.log(rows[0].itemcount);
+        return {
+          range: `${range.min}-${range.max === Infinity ? "above" : range.max}`,
+          count: parseInt(rows[0].itemcount, 10),
+        };
+      })
+    );
+
+    const rows = await db.sequelize.query(
+      `SELECT COUNT(*) as itemCount FROM public.ecommerce where price>=900 and extract(month from "dateOfSale") = ${month}`
+    );
+    console.log(rows[0][0].itemcount);
+    ranges.push({
+      range: "901-above",
+      count: parseInt(rows[0][0].itemcount, 10),
+    });
+
+    res.json(ranges);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
 module.exports = {
   getData,
   getFilterData,
   getStatictics,
+  getBarChart,
 };
