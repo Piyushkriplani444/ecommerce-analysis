@@ -201,9 +201,41 @@ async function getBarChart(req, res) {
   }
 }
 
+async function getcategoryCount(req, res) {
+  try {
+    const { month } = req.body;
+    const categorycount = {};
+
+    const rows = await db.sequelize.query(
+      `SELECT *  FROM public.ecommerce where extract(month from "dateOfSale") = ${month}`
+    );
+
+    for (let data of rows[0]) {
+      // console.log(data);
+      if (categorycount[data.category]) {
+        const datas = categorycount[data.category];
+        datas.count += 1;
+      } else {
+        categorycount[data.category] = {
+          category: data.category,
+          count: 1,
+        };
+      }
+    }
+
+    // console.log(Object.values(categorycount));
+
+    return res.send(Object.values(categorycount));
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
 module.exports = {
   getData,
   getFilterData,
   getStatictics,
   getBarChart,
+  getcategoryCount,
 };
