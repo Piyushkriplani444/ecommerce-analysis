@@ -110,6 +110,24 @@ async function getFilterData(req, res) {
   }
 }
 
+async function GetAllInfo(req, res) {
+  try {
+    console.log("appple");
+    const getStaticticsss = await getStatictics(req, res);
+    console.log("ball");
+    const getBarCharts = await getBarChart(req, res);
+    console.log("Cat");
+    const getcategoryCounts = await getcategoryCount(req, res);
+    res.send({
+      getStat: getStaticticsss,
+      getBar: getBarCharts,
+      getcategory: getcategoryCounts,
+    });
+  } catch (error) {
+    throw error;
+  }
+}
+
 async function getStatictics(req, res) {
   try {
     let { month } = req.body;
@@ -117,9 +135,7 @@ async function getStatictics(req, res) {
       month = 3;
     }
     const datas = await db.sequelize.query(
-      `SELECT * FROM public.ecommerce where extract(month from "dateOfSale") = ${parseInt(
-        month
-      )}  `
+      `SELECT * FROM public.ecommerce where extract(month from "dateOfSale") = ${month} `
     );
     let total_no_sold = 0;
     let total_no_unsold = 0;
@@ -132,12 +148,13 @@ async function getStatictics(req, res) {
         total_no_unsold += 1;
       }
     }
+    // console.log("apple mango");
 
-    return res.send({
+    return {
       total_sold,
       total_no_sold,
       total_no_unsold,
-    });
+    };
   } catch (error) {
     console.log(error);
     throw error;
@@ -177,7 +194,7 @@ async function getBarChart(req, res) {
         };
 
         const rows = await db.sequelize.query(query, replacement1);
-        console.log(rows[0].itemcount);
+        // console.log(rows[0].itemcount);
         return {
           range: `${range.min}-${range.max === Infinity ? "above" : range.max}`,
           count: parseInt(rows[0].itemcount, 10),
@@ -188,13 +205,13 @@ async function getBarChart(req, res) {
     const rows = await db.sequelize.query(
       `SELECT COUNT(*) as itemCount FROM public.ecommerce where price>=900 and extract(month from "dateOfSale") = ${month}`
     );
-    console.log(rows[0][0].itemcount);
+    // console.log(rows[0][0].itemcount);
     ranges.push({
       range: "901-above",
       count: parseInt(rows[0][0].itemcount, 10),
     });
 
-    res.json(ranges);
+    return ranges;
   } catch (error) {
     console.log(error);
     throw error;
@@ -225,7 +242,7 @@ async function getcategoryCount(req, res) {
 
     // console.log(Object.values(categorycount));
 
-    return res.send(Object.values(categorycount));
+    return Object.values(categorycount);
   } catch (error) {
     console.log(error);
     throw error;
@@ -238,4 +255,5 @@ module.exports = {
   getStatictics,
   getBarChart,
   getcategoryCount,
+  GetAllInfo,
 };
